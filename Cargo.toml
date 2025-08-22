@@ -1,0 +1,16 @@
+[package]
+name = "luasyn"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+luasyn-proc = {version = "0.1.0", path = "./proc"}
+
+[features]
+default = ["5.4"]
+"5.1" = []
+"5.2" = []
+"5.3" = []
+"5.4" = []
+"LuaJIT" = []
+

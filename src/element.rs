@@ -24,30 +24,26 @@ pub struct SeparatedTrailing<T, Sep> {
     pub last: T,
 }
 
-/// Represents the name of a defined function.
 #[derive(Debug, Clone)]
 pub struct FunctionName {
     pub path: SeparatedTrailing<TokenTy![name], TokenTy![.]>,
     pub suffix: Option<(TokenTy![:], TokenTy![name])>,
 }
 
-/// Represents a list of variables.
 pub type VarList = SeparatedTrailing<Var, TokenTy![,]>;
-/// Represents a list of names.
+
 pub type NameList = SeparatedTrailing<TokenTy![name], TokenTy![,]>;
 #[cfg(feature = "5.4")]
 pub type AttrNameList = SeparatedTrailing<(TokenTy![name], Attribute), TokenTy![,]>;
-/// Represents a list of expressions.
+
 pub type ExpList = SeparatedTrailing<Exp, TokenTy![,]>;
 
-/// Represents a single chunk of Lua code.
 #[derive(Debug, Clone, Parseable)]
 pub struct Chunk {
     pub statements: Vec<(Statement, Option<TokenTy![;]>)>,
     pub last_statement: Option<(LastStatement, Option<TokenTy![;]>)>,
 }
 
-/// Represents a single statement.
 #[derive(Debug, Clone, Parseable)]
 pub enum Statement {
     Assign(StAssign),
@@ -69,7 +65,6 @@ pub enum Statement {
     Break(StBreak),
 }
 
-/// Represents the assignment of values to already existing variables.
 #[derive(Debug, Clone, Parseable)]
 pub struct StAssign {
     pub vars: VarList,
@@ -77,7 +72,6 @@ pub struct StAssign {
     pub exps: ExpList,
 }
 
-/// Represents a block scope.
 #[derive(Debug, Clone, Parseable)]
 pub struct StBlock {
     pub kw_do: TokenTy![do],
@@ -86,15 +80,13 @@ pub struct StBlock {
 }
 
 #[cfg(feature = "5.4")]
-/// Represents an attribute.
 #[derive(Debug, Clone, Parseable)]
 pub struct Attribute {
     pub open_angle: TokenTy![<],
     pub name: TokenTy![name],
-    pub close_angle: TokenTy![>]
+    pub close_angle: TokenTy![>],
 }
 
-/// Represents a while loop.
 #[derive(Debug, Clone, Parseable)]
 pub struct StWhileLoop {
     pub kw_while: TokenTy![while],
@@ -104,7 +96,6 @@ pub struct StWhileLoop {
     pub kw_end: TokenTy![end],
 }
 
-/// Represents a repeat loop.
 #[derive(Debug, Clone, Parseable)]
 pub struct StRepeatLoop {
     pub kw_repeat: TokenTy![repeat],
@@ -113,7 +104,6 @@ pub struct StRepeatLoop {
     pub exp: Exp,
 }
 
-/// Represents a for-range loop.
 #[derive(Debug, Clone, Parseable)]
 pub struct StForRangeLoop {
     pub kw_for: TokenTy![for],
@@ -128,7 +118,6 @@ pub struct StForRangeLoop {
     pub kw_end: TokenTy![end],
 }
 
-/// Represents a for-in loop.
 #[derive(Debug, Clone, Parseable)]
 pub struct StForInLoop {
     pub kw_for: TokenTy![for],
@@ -140,7 +129,6 @@ pub struct StForInLoop {
     pub kw_end: TokenTy![end],
 }
 
-/// Represents an if-elseif-else tree.
 #[derive(Debug, Clone, Parseable)]
 pub struct StIfElse {
     pub if_branch: IfBranch,
@@ -148,7 +136,6 @@ pub struct StIfElse {
     pub else_branch: Option<ElseBranch>,
 }
 
-/// Represents the initial branch of an if-elseif-else tree.
 #[derive(Debug, Clone, Parseable)]
 pub struct IfBranch {
     pub kw_if: TokenTy![if],
@@ -157,7 +144,6 @@ pub struct IfBranch {
     pub body: Chunk,
 }
 
-/// Represents intermediary branches of an if-elseif-else tree.
 #[derive(Debug, Clone, Parseable)]
 pub struct ElseIfBranch {
     pub kw_elseif: TokenTy![elseif],
@@ -166,7 +152,6 @@ pub struct ElseIfBranch {
     pub body: Chunk,
 }
 
-/// Represents the final branch of an if-elseif-else tree.
 #[derive(Debug, Clone, Parseable)]
 pub struct ElseBranch {
     pub kw_else: TokenTy![else],
@@ -176,7 +161,7 @@ pub struct ElseBranch {
 #[derive(Debug, Clone, Parseable)]
 pub struct FunctionCall {
     pub prefix: Box<PrefixExp>,
-    pub body: FunctionCallBody
+    pub body: FunctionCallBody,
 }
 
 #[derive(Debug, Clone, Parseable)]
@@ -282,7 +267,7 @@ pub enum Var {
 #[derive(Debug, Clone, Parseable)]
 pub struct VarIndex {
     pub prefix: Box<PrefixExp>,
-    pub body: VarIndexBody
+    pub body: VarIndexBody,
 }
 
 #[derive(Debug, Clone, Parseable)]
@@ -295,7 +280,7 @@ pub struct VarIndexBody {
 #[derive(Debug, Clone, Parseable)]
 pub struct VarAccess {
     pub prefix: Box<PrefixExp>,
-    pub body: VarAccessBody
+    pub body: VarAccessBody,
 }
 
 #[derive(Debug, Clone, Parseable)]
@@ -307,13 +292,13 @@ pub struct VarAccessBody {
 #[derive(Debug, Clone, Parseable)]
 pub struct PrefixExp {
     pub kind: PrefixExpKind,
-    pub calls: Vec<PrefixExpSuffix>
+    pub calls: Vec<PrefixExpSuffix>,
 }
 
 #[derive(Debug, Clone, Parseable)]
 pub enum PrefixExpKind {
     Name(TokenTy![name]),
-    Parens(PrefixParens)
+    Parens(PrefixParens),
 }
 
 #[derive(Debug, Clone, Parseable)]

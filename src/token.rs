@@ -11,7 +11,7 @@ macro_rules! def_token {
 			$(
 				#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 				#[allow(missing_docs)]
-				/// Don't try to remember the name of this type - use [`Token![]`](crate::Token).
+				/// Don't try to remember the name of this type - use [`TokenTy![]`](crate::token::TokenTy).
 				pub struct $name {
 					pub span: crate::Span
 				}
@@ -225,9 +225,9 @@ def_token! {
     },
 
     [$_: ident]: Name |s| {
-    	let start = s.index;
+        let start = s.index;
         let start_char: char = s.chars().next()
-        	.ok_or(ParsingError::new(s.index, "EOF when trying to parse name"))?;
+            .ok_or(ParsingError::new(s.index, "EOF when trying to parse name"))?;
         if !(start_char.is_ascii_alphabetic() || start_char == '_') {
             return Err(ParsingError::new(s.index, "name must start with alphabetic or _"));
         }
@@ -243,23 +243,36 @@ def_token! {
     }
 }
 
+/// Don't try to remember the name of this type - use [`TokenTy![]`](crate::token::TokenTy).
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct LiteralString {
+    /// The span of the starting quote.
     pub start_span: Span,
+    /// The span of the inner string.
     pub inner_span: Span,
+    /// The span of the ending quote.
     pub end_span: Span,
+    /// The quote type.
     pub quote_type: QuoteType,
 }
 
 impl LiteralString {
+    /// Returns the full span of the string literal.
     pub fn full_span(&self) -> Span {
         Span::new(self.start_span.start, self.end_span.end)
     }
 }
 
+/// A literal string's quote type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum QuoteType {
+    /// `'single quotes'`
     Single,
+    /// `"double quotes"`
     Double,
-    Bracketed { eq_count: usize },
+    /// `[==[bracket quotes]==]`
+    Bracketed {
+        /// The amount of equals signs between the brackets.
+        eq_count: usize,
+    },
 }

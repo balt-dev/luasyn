@@ -1,17 +1,16 @@
 //! Tokenization.
 
 use crate::{
-    parse::ParsingError, token::{LiteralNumber, LiteralString, QuoteType, Token}, Span
+    Span,
+    parse::ParsingError,
+    token::{LiteralNumber, LiteralString, QuoteType, Token},
 };
 use std::{ops::Deref, sync::Arc};
 
 impl TokenStream {
     /// Parses a tokenizable buffer into a token stream.
     pub fn parse(source: &str) -> Result<TokenStream, ParsingError> {
-        let mut tok = Tokenizer {
-            source,
-            index: 0,
-        };
+        let mut tok = Tokenizer { source, index: 0 };
 
         let mut buf = vec![];
 
@@ -28,7 +27,7 @@ impl TokenStream {
                 break Ok(TokenStream {
                     buffer: Arc::new(buf),
                     index: 0,
-                    source_len: tok.source.len()
+                    source_len: tok.source.len(),
                 });
             }
         }
@@ -37,7 +36,7 @@ impl TokenStream {
 
 pub(crate) struct Tokenizer<'source> {
     source: &'source str,
-    index: usize
+    index: usize,
 }
 impl<'source> Deref for Tokenizer<'source> {
     type Target = str;
@@ -55,7 +54,10 @@ impl Tokenizer<'_> {
     /// Skips whitespace.
     fn skip_whitespace(&mut self) -> Result<(), ParsingError> {
         loop {
-            self.jump(self.find(|c: char| !c.is_ascii_whitespace()).unwrap_or(self.len()));
+            self.jump(
+                self.find(|c: char| !c.is_ascii_whitespace())
+                    .unwrap_or(self.len()),
+            );
             if self.len() == 0 {
                 break;
             }
@@ -120,7 +122,7 @@ pub(crate) fn tokenize_literal_number(
     if tok.starts_with("0X") || tok.starts_with("0x") {
         tok.jump(2);
         loop {
-            let Some(c) = tok.chars().next() else {break};
+            let Some(c) = tok.chars().next() else { break };
             if !c.is_ascii_hexdigit() {
                 #[cfg(not(feature = "5.1"))]
                 if c == '.' {
@@ -140,9 +142,19 @@ pub(crate) fn tokenize_literal_number(
             // Decimal
             if !found_first {
                 // need at least one number
-                let Some(c) = tok.chars().next() else { return Err(ParsingError::new(tok.index, "number must have at least one digit"))};
-                if !(c.is_ascii_hexdigit() || (cfg!(not(feature = "5.1")) && (c == 'p' || c == 'P'))) {
-                    return Err(ParsingError::new(tok.index, "number must have at least one digit"));
+                let Some(c) = tok.chars().next() else {
+                    return Err(ParsingError::new(
+                        tok.index,
+                        "number must have at least one digit",
+                    ));
+                };
+                if !(c.is_ascii_hexdigit()
+                    || (cfg!(not(feature = "5.1")) && (c == 'p' || c == 'P')))
+                {
+                    return Err(ParsingError::new(
+                        tok.index,
+                        "number must have at least one digit",
+                    ));
                 }
                 tok.jump(1);
                 found_first = true;
@@ -166,12 +178,15 @@ pub(crate) fn tokenize_literal_number(
             loop {
                 let Some(c) = tok.chars().next() else { break };
                 if !found_first && (c == '+' || c == '-') {
-                   tok.jump(1);
-                   continue;
+                    tok.jump(1);
+                    continue;
                 }
                 if !c.is_ascii_hexdigit() {
                     if !found_first {
-                        return Err(ParsingError::new(tok.index, "number exponent must have at least one digit"))
+                        return Err(ParsingError::new(
+                            tok.index,
+                            "number exponent must have at least one digit",
+                        ));
                     }
                     break;
                 }
@@ -181,7 +196,7 @@ pub(crate) fn tokenize_literal_number(
         }
     } else {
         loop {
-            let Some(c) = tok.chars().next() else {break};
+            let Some(c) = tok.chars().next() else { break };
             if !c.is_ascii_digit() {
                 if c == '.' {
                     found_point = true;
@@ -200,9 +215,17 @@ pub(crate) fn tokenize_literal_number(
             // Decimal
             if !found_first {
                 // need at least one number
-                let Some(c) = tok.chars().next() else { return Err(ParsingError::new(tok.index, "number must have at least one digit"))};
+                let Some(c) = tok.chars().next() else {
+                    return Err(ParsingError::new(
+                        tok.index,
+                        "number must have at least one digit",
+                    ));
+                };
                 if !(c.is_ascii_digit() || c == 'e' || c == 'E') {
-                    return Err(ParsingError::new(tok.index, "number must have at least one digit"));
+                    return Err(ParsingError::new(
+                        tok.index,
+                        "number must have at least one digit",
+                    ));
                 }
                 tok.jump(1);
                 found_first = true;
@@ -225,12 +248,15 @@ pub(crate) fn tokenize_literal_number(
             loop {
                 let Some(c) = tok.chars().next() else { break };
                 if !found_first && (c == '+' || c == '-') {
-                   tok.jump(1);
-                   continue;
+                    tok.jump(1);
+                    continue;
                 }
                 if !c.is_ascii_digit() {
                     if !found_first {
-                        return Err(ParsingError::new(tok.index, "number exponent must have at least one digit"))
+                        return Err(ParsingError::new(
+                            tok.index,
+                            "number exponent must have at least one digit",
+                        ));
                     }
                     break;
                 }
@@ -257,20 +283,25 @@ impl QuoteType {
             QuoteType::Single => (tok.starts_with("'"), 1),
             QuoteType::Double => (tok.starts_with('"'), 1),
             QuoteType::Bracketed { eq_count } => {
-                if !tok.starts_with("]") { return (false, 0); }
+                if !tok.starts_with("]") {
+                    return (false, 0);
+                }
                 tok.jump(1);
-                if tok.len() < *eq_count { return (false, 0); }
+                if tok.len() < *eq_count {
+                    return (false, 0);
+                }
                 if !tok[..*eq_count].chars().all(|c| c == '=') {
                     return (false, 0);
                 }
                 tok.jump(*eq_count);
-                if !tok.starts_with("]") { return (false, 0) }
+                if !tok.starts_with("]") {
+                    return (false, 0);
+                }
                 (true, *eq_count + 2)
             }
         }
     }
 }
-
 
 pub(crate) fn tokenize_literal_string(
     t: &mut Tokenizer<'_>,
@@ -290,7 +321,10 @@ pub(crate) fn tokenize_literal_string(
         let eq_count = tok.find(|c| c != '=').unwrap_or(tok.len());
         tok.jump(eq_count);
         if !tok.starts_with("[") {
-            return Err(ParsingError::new(tok.index, "expected bracket to close block string"));
+            return Err(ParsingError::new(
+                tok.index,
+                "expected bracket to close block string",
+            ));
         }
         tok.jump(1);
         quote_type = QuoteType::Bracketed { eq_count };
@@ -303,7 +337,10 @@ pub(crate) fn tokenize_literal_string(
 
     loop {
         if tok.is_empty() {
-            return Err(ParsingError::new(tok.index, "reached EOF before finding end of string"))
+            return Err(ParsingError::new(
+                tok.index,
+                "reached EOF before finding end of string",
+            ));
         }
 
         if was_escape {
@@ -320,8 +357,8 @@ pub(crate) fn tokenize_literal_string(
                     start_span: Span::new(start, inner_start),
                     inner_span: Span::new(inner_start, inner_end),
                     end_span: Span::new(inner_end, t.index),
-                    quote_type
-                })
+                    quote_type,
+                });
             }
         }
 
@@ -339,14 +376,19 @@ mod test {
         macro_rules! test_num {
             ($l: literal) => {{
                 let stream = TokenStream::parse($l).expect(concat!("erroneous failure: ", $l));
-                assert!(stream.buffer.len() == 2, concat!("erroneous failure: ", $l, " {:?}"), stream);
+                assert!(
+                    stream.buffer.len() == 2,
+                    concat!("erroneous failure: ", $l, " {:?}"),
+                    stream
+                );
             }};
             (! $l: literal) => {{
                 let stream = TokenStream::parse($l);
                 if let Ok(s) = stream {
                     assert!(
                         s.buffer.len() > 2 || !matches!(s.buffer[0], Token::LiteralNumber(_)),
-                        concat!("erroneous success: ", $l, " {:?}"), s
+                        concat!("erroneous success: ", $l, " {:?}"),
+                        s
                     )
                 }
             }};
@@ -404,14 +446,23 @@ mod test {
             ($l: literal) => {{
                 println!("testing: {}", $l);
                 let stream = TokenStream::parse($l).expect(concat!("erroneous failure: ", $l));
-                assert!(stream.buffer.len() == 2 && matches!(stream.buffer[0], Token::LiteralString(_)), concat!("erroneous failure: ", $l, " {:?}"), stream);
+                assert!(
+                    stream.buffer.len() == 2 && matches!(stream.buffer[0], Token::LiteralString(_)),
+                    concat!("erroneous failure: ", $l, " {:?}"),
+                    stream
+                );
                 println!("passed: {}", $l);
             }};
             (!$l: literal) => {{
                 println!("testing: {}", $l);
                 let s = TokenStream::parse($l);
                 if let Ok(stream) = s {
-                    assert!(!(stream.buffer.len() == 2 && matches!(stream.buffer[0], Token::LiteralString(_))), concat!("erroneous success: ", $l, " {:?}"), stream);
+                    assert!(
+                        !(stream.buffer.len() == 2
+                            && matches!(stream.buffer[0], Token::LiteralString(_))),
+                        concat!("erroneous success: ", $l, " {:?}"),
+                        stream
+                    );
                 }
                 println!("passed: {}", $l);
             }};

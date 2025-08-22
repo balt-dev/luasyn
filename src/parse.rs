@@ -10,7 +10,7 @@ pub struct ParsingError {
     /// The error index.
     pub index: usize,
     /// The error message.
-    pub message: &'static str
+    pub message: &'static str,
 }
 
 impl ParsingError {
@@ -180,7 +180,10 @@ impl Parseable for Exp {
         }
         let mut output_queue = VecDeque::<RPNValue>::new();
         let mut operator_stack = Vec::<RPNValue>::new();
-        enum State { UnaryAtom, Binary }
+        enum State {
+            UnaryAtom,
+            Binary,
+        }
         let mut st = State::UnaryAtom;
         loop {
             // TODO: This needs to handle unaries differenly, -x ^ y is broken atm
@@ -190,7 +193,7 @@ impl Parseable for Exp {
                         let top_prec = operator_stack.last().map_or(0, |b| match b {
                             RPNValue::Binary(b) => b.precedence(),
                             RPNValue::Unary(_) => BinaryOperand::UNARY_PRECEDENCE,
-                            _ => unreachable!()
+                            _ => unreachable!(),
                         });
                         if BinaryOperand::UNARY_PRECEDENCE < top_prec {
                             output_queue.push_back(RPNValue::Unary(unary));
@@ -202,14 +205,16 @@ impl Parseable for Exp {
                     let atom = ExpAtom::parse(t)?;
                     output_queue.push_back(RPNValue::Atom(atom));
                     st = State::Binary;
-                },
+                }
                 State::Binary => {
-                    let Ok(binop) = BinaryOperand::parse(t) else { break };
+                    let Ok(binop) = BinaryOperand::parse(t) else {
+                        break;
+                    };
                     let prec = binop.precedence();
                     let top_prec = operator_stack.last().map_or(0, |b| match b {
                         RPNValue::Binary(b) => b.precedence(),
                         RPNValue::Unary(_) => BinaryOperand::UNARY_PRECEDENCE,
-                        _ => unreachable!()
+                        _ => unreachable!(),
                     });
 
                     if prec < top_prec || (binop.left_assoc() && prec == top_prec) {
@@ -235,18 +240,26 @@ impl Parseable for Exp {
                     let ex = rpn_stack.pop().unwrap();
                     rpn_stack.push(Exp::Unary(ExpUnary {
                         operand: un,
-                        value: Box::new(ex)
+                        value: Box::new(ex),
                     }));
                 }
                 RPNValue::Binary(operand) => {
                     let right = rpn_stack.pop().unwrap();
                     let left = rpn_stack.pop().unwrap();
-                    rpn_stack.push(Exp::Binary(ExpBinary { left: Box::new(left), operand, right: Box::new(right) }))
+                    rpn_stack.push(Exp::Binary(ExpBinary {
+                        left: Box::new(left),
+                        operand,
+                        right: Box::new(right),
+                    }))
                 }
             }
         }
 
-        assert!(rpn_stack.len() == 1, "had {} values on the stack after calculating rpn", rpn_stack.len());
+        assert!(
+            rpn_stack.len() == 1,
+            "had {} values on the stack after calculating rpn",
+            rpn_stack.len()
+        );
 
         Ok(rpn_stack.pop().unwrap())
     }
@@ -259,22 +272,25 @@ impl BinaryOperand {
         match self {
             BinaryOperand::Or(_) => 1,
             BinaryOperand::And(_) => 2,
-            BinaryOperand::Less(_) |
-            BinaryOperand::LessEqual(_) |
-            BinaryOperand::Greater(_) |
-            BinaryOperand::GreaterEqual(_) |
-            BinaryOperand::TildeEqual(_) |
-            BinaryOperand::DoubleEqual(_) => 3,
-            #[cfg(any(feature = "5.3", feature = "5.4"))] BinaryOperand::Pipe(_) => 4,
-            #[cfg(any(feature = "5.3", feature = "5.4"))] BinaryOperand::Tilde(_) => 5,
-            #[cfg(any(feature = "5.3", feature = "5.4"))] BinaryOperand::Ampersand(_) => 6,
+            BinaryOperand::Less(_)
+            | BinaryOperand::LessEqual(_)
+            | BinaryOperand::Greater(_)
+            | BinaryOperand::GreaterEqual(_)
+            | BinaryOperand::TildeEqual(_)
+            | BinaryOperand::DoubleEqual(_) => 3,
             #[cfg(any(feature = "5.3", feature = "5.4"))]
-                BinaryOperand::DoubleLess(_) |
-                BinaryOperand::DoubleGreater(_) => 7,
+            BinaryOperand::Pipe(_) => 4,
+            #[cfg(any(feature = "5.3", feature = "5.4"))]
+            BinaryOperand::Tilde(_) => 5,
+            #[cfg(any(feature = "5.3", feature = "5.4"))]
+            BinaryOperand::Ampersand(_) => 6,
+            #[cfg(any(feature = "5.3", feature = "5.4"))]
+            BinaryOperand::DoubleLess(_) | BinaryOperand::DoubleGreater(_) => 7,
             BinaryOperand::DoubleDot(_) => 8,
             BinaryOperand::Plus(_) | BinaryOperand::Minus(_) => 9,
             BinaryOperand::Asterisk(_) | BinaryOperand::Slash(_) | BinaryOperand::Percent(_) => 10,
-            #[cfg(any(feature = "5.3", feature = "5.4"))] BinaryOperand::DoubleSlash(_) => 10,
+            #[cfg(any(feature = "5.3", feature = "5.4"))]
+            BinaryOperand::DoubleSlash(_) => 10,
             //
             BinaryOperand::Carat(_) => 12,
         }
@@ -282,29 +298,31 @@ impl BinaryOperand {
     fn left_assoc(&self) -> bool {
         match self {
             BinaryOperand::Carat(_) => false,
-            _ => true
+            _ => true,
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::tokenize::TokenStream;
-    use crate::parse::Parseable;
     use crate::parse::Exp;
+    use crate::parse::Parseable;
+    use crate::tokenize::TokenStream;
 
     #[test]
     fn binop_test() {
         macro_rules! test {
             ($lit: literal) => {
-                let mut tok = TokenStream::parse($lit).expect(concat!("token stream parsing failed: ", $lit));
+                let mut tok =
+                    TokenStream::parse($lit).expect(concat!("token stream parsing failed: ", $lit));
                 let ex = Exp::parse(&mut tok).expect(concat!("test failed: ", $lit));
                 eprintln!("{ex:?}")
             };
             (!$lit: literal) => {
-                let mut tok = TokenStream::parse($lit).expect(concat!("token stream parsing failed: ", $lit));
+                let mut tok =
+                    TokenStream::parse($lit).expect(concat!("token stream parsing failed: ", $lit));
                 Exp::parse(&mut tok).expect_err(concat!("test erroneously succeeded: ", $lit));
-            }
+            };
         }
         test!("(-2) ^ 2");
         test!("-2 ^ 2");
